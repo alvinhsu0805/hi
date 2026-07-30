@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登打完成</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #f3efe6;
+      color: #1c2430;
+    }
+    main {
+      max-width: 640px;
+      margin: 10vh auto;
+      padding: 24px;
+      background: #fffdf8;
+      border: 1px solid #d7d0c3;
+      border-radius: 18px;
+      text-align: center;
+    }
+    a {
+      display: inline-block;
+      margin: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #0f6a5a;
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    a.secondary { background: #2f3b4a; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>已寫入 Excel</h1>
+    <p>資料已追加到第 {{ row }} 列。</p>
+    <a href="{{ excel_url }}">下載不良統計.xlsx</a>
+    <a class="secondary" href="/">繼續下一張</a>
+  </main>
+</body>
+</html>

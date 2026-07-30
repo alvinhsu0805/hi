@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>審核辨識結果</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1c2430;
+      --accent: #0f6a5a;
+      --warn: #c45c26;
+      --card: #fffdf8;
+      --line: #d7d0c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 56px;
+    }
+    h1 { margin: 0 0 8px; font-size: 1.7rem; }
+    .meta { color: #516071; margin-bottom: 18px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #eee;
+    }
+    label { display:block; font-size: 0.85rem; color:#516071; margin-bottom:4px; }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: left; }
+    th { font-size: 0.85rem; color: #516071; }
+    .low { color: var(--warn); font-weight: 700; }
+    .warn-box {
+      background: #fff4e8;
+      border: 1px solid #f0c49a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    button {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>審核後寫入 Excel</h1>
+    <p class="meta">引擎：{{ result.engine }}　整體信心：{{ '%.0f'|format(result.overall_confidence * 100) }}%</p>
+
+    <div class="layout">
+      <section class="panel">
+        <img src="{{ image_url }}" alt="上傳的表單照片" />
+      </section>
+
+      <section class="panel">
+        {% if result.warnings %}
+        <div class="warn-box">
+          <strong>提醒</strong>
+          <ul>
+            {% for w in result.warnings %}
+            <li>{{ w }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form action="/commit" method="post">
+          <input type="hidden" name="source_image" value="{{ result.source_image }}" />
+          <label>製令</label>
+          <input name="work_order" value="{{ result.work_order }}" />
+          <label>品號</label>
+          <input name="product_no" value="{{ result.product_no }}" />
+          <label>作業人員</label>
+          <input name="operator" value="{{ result.operator }}" />
+          <label>日期</label>
+          <input name="date" value="{{ result.date }}" />
+          <label>班別</label>
+          <input name="shift" value="{{ result.shift }}" />
+
+          <table>
+            <thead>
+              <tr>
+                <th>不良項目</th>
+                <th>正字畫</th>
+                <th>數量</th>
+                <th>信心</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in result.defects %}
+              <tr>
+                <td>{{ d.label }}</td>
+                <td>
+                  <input name="raw_{{ d.key }}" value="{{ d.raw_mark }}" style="margin:0" />
+                </td>
+                <td>
+                  <input name="defect_{{ d.key }}" type="number" min="0" value="{{ d.count }}" style="margin:0" />
+                </td>
+                <td class="{% if d.confidence < 0.6 %}low{% endif %}">
+                  {{ '%.0f'|format(d.confidence * 100) }}%
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <button type="submit">確認登打到 Excel</button>
+        </form>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

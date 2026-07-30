@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>不良表單 OCR 自動登打</title>
+  <link rel="stylesheet" href="/static-inline.css" disabled />
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1c2430;
+      --accent: #0f6a5a;
+      --accent-2: #c45c26;
+      --card: #fffdf8;
+      --line: #d7d0c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 10%, #ffe7c8 0%, transparent 40%),
+        radial-gradient(circle at 90% 0%, #cfeee6 0%, transparent 35%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      margin: 0 0 8px;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      color: #516071;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(28, 36, 48, 0.06);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      background: #e7f6f1;
+      color: var(--accent);
+    }
+    .badge.warn { background: #fde8dc; color: var(--accent-2); }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 16px;
+      border: 1.5px dashed #9aa7b5;
+      border-radius: 12px;
+      background: #faf7f1;
+    }
+    button, .btn {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button.secondary, .btn.secondary {
+      background: #2f3b4a;
+    }
+    .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .tips {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      background: rgba(255,255,255,0.55);
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .chip {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge {% if not has_api_key %}warn{% endif %}">
+      {% if has_api_key %}Vision OCR 已啟用{% else %}示範模式（未設定 OPENAI_API_KEY）{% endif %}
+    </span>
+    <h1>不良表單自動登打</h1>
+    <p class="sub">
+      拍照上傳每日不良記錄表，系統辨識製令、品號、作業人員與正字畫不良數，
+      審核後寫入 Excel。潦草字跡建議用人眼快速覆核低信心欄位。
+    </p>
+
+    <section class="panel">
+      <form action="/recognize" method="post" enctype="multipart/form-data">
+        <label for="image">上傳表單照片</label>
+        <input id="image" name="image" type="file" accept="image/*" capture="environment" required />
+        <div class="actions">
+          <button type="submit">開始辨識</button>
+          <a class="btn secondary" href="/files/outputs/blank_defect_form.xlsx">下載空白表單</a>
+          <a class="btn secondary" href="/files/outputs/defect_stats.xlsx">下載統計 Excel</a>
+        </div>
+      </form>
+    </section>
+
+    <div class="tips">
+      <strong>提高辨識率的做法</strong>
+      <div class="grid">
+        <div class="chip">表單版面固定，欄位對齊</div>
+        <div class="chip">正字畫寫在框內，避免壓線</div>
+        <div class="chip">整張入鏡、光線均勻</div>
+        <div class="chip">製令/品號盡量正楷或蓋章</div>
+      </div>
+      <p style="margin:14px 0 0">目前設定的不良項目：
+        {% for item in schema.defect_items %}{{ item.label }}{% if not loop.last %}、{% endif %}{% endfor %}
+      </p>
+      <p style="margin:8px 0 0;color:#516071">Excel 輸出：{{ excel_path }}</p>
+    </div>
+  </main>
+</body>
+</html>

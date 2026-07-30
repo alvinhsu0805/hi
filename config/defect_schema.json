@@ -1,0 +1,43 @@
+{
+  "form_name": "不良記錄表",
+  "header_fields": [
+    {"key": "work_order", "label": "製令", "type": "text"},
+    {"key": "product_no", "label": "品號", "type": "text"},
+    {"key": "operator", "label": "作業人員", "type": "text"},
+    {"key": "date", "label": "日期", "type": "date"},
+    {"key": "shift", "label": "班別", "type": "text"}
+  ],
+  "defect_items": [
+    {"key": "scratch", "label": "刮傷"},
+    {"key": "dent", "label": "凹陷"},
+    {"key": "dirty", "label": "污漬"},
+    {"key": "burr", "label": "毛邊"},
+    {"key": "crack", "label": "裂痕"},
+    {"key": "wrong_size", "label": "尺寸不良"},
+    {"key": "missing", "label": "缺料"},
+    {"key": "other", "label": "其他"}
+  ],
+  "excel": {
+    "sheet_name": "不良統計",
+    "header_row": 1,
+    "columns": {
+      "date": "A",
+      "work_order": "B",
+      "product_no": "C",
+      "operator": "D",
+      "shift": "E",
+      "scratch": "F",
+      "dent": "G",
+      "dirty": "H",
+      "burr": "I",
+      "crack": "J",
+      "wrong_size": "K",
+      "missing": "L",
+      "other": "M",
+      "total": "N",
+      "source_image": "O",
+      "confidence": "P",
+      "reviewed": "Q"
+    }
+  }
+}
