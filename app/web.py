@@ -71,7 +71,6 @@ async def recognize(request: Request, image: UploadFile = File(...)):
 async def commit(request: Request):
     form = dict(await request.form())
     catalog = schema.defect_by_key()
-    defects: list[DefectCount] = []
 
     counts: dict[str, DefectCount] = {}
     for key, item in catalog.items():
