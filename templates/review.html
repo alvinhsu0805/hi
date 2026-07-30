@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>審核辨識結果</title>
+  <title>審核 QWF-ME061 辨識結果</title>
   <style>
     :root {
-      --bg: #f3efe6;
-      --ink: #1c2430;
-      --accent: #0f6a5a;
-      --warn: #c45c26;
-      --card: #fffdf8;
-      --line: #d7d0c3;
+      --bg: #eef3f1;
+      --ink: #152028;
+      --accent: #0b5f73;
+      --warn: #b45309;
+      --card: #ffffff;
+      --line: #c9d5d8;
     }
     * { box-sizing: border-box; }
     body {
@@ -20,53 +20,59 @@
       color: var(--ink);
       background: var(--bg);
     }
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px 16px 56px;
-    }
-    h1 { margin: 0 0 8px; font-size: 1.7rem; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 56px; }
+    h1 { margin: 0 0 8px; font-size: 1.6rem; }
     .meta { color: #516071; margin-bottom: 18px; }
     .layout {
       display: grid;
-      grid-template-columns: 1.1fr 1fr;
+      grid-template-columns: 1.05fr 1fr;
       gap: 16px;
     }
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
     .panel {
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 14px;
     }
     img {
       width: 100%;
-      border-radius: 12px;
+      border-radius: 10px;
       border: 1px solid var(--line);
       background: #eee;
     }
-    label { display:block; font-size: 0.85rem; color:#516071; margin-bottom:4px; }
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      margin-bottom: 10px;
-      font-size: 1rem;
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
     }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: left; }
-    th { font-size: 0.85rem; color: #516071; }
+    label { display:block; font-size: 0.8rem; color:#516071; margin-bottom:3px; }
+    input, textarea {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      margin-bottom: 4px;
+      font-size: 0.98rem;
+    }
+    textarea { min-height: 64px; resize: vertical; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 7px 4px; text-align: left; font-size: 0.92rem; }
+    th { font-size: 0.8rem; color: #516071; }
     .low { color: var(--warn); font-weight: 700; }
     .warn-box {
-      background: #fff4e8;
+      background: #fff6eb;
       border: 1px solid #f0c49a;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 10px 12px;
       margin-bottom: 12px;
       line-height: 1.5;
+    }
+    .totals {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 8px 0 12px;
     }
     button {
       border: 0;
@@ -77,18 +83,23 @@
       border-radius: 12px;
       cursor: pointer;
       width: 100%;
-      margin-top: 8px;
+      margin-top: 10px;
     }
+    .muted { color: #6b7c86; font-size: 0.85rem; margin-top: 8px; }
   </style>
 </head>
 <body>
   <main>
     <h1>審核後寫入 Excel</h1>
-    <p class="meta">引擎：{{ result.engine }}　整體信心：{{ '%.0f'|format(result.overall_confidence * 100) }}%</p>
+    <p class="meta">
+      引擎：{{ result.engine }}　
+      整體信心：{{ '%.0f'|format(result.overall_confidence * 100) }}%　
+      有數量代碼：{{ nonzero|length }}
+    </p>
 
     <div class="layout">
       <section class="panel">
-        <img src="{{ image_url }}" alt="上傳的表單照片" />
+        <img src="{{ image_url }}" alt="上傳的檢驗表照片" />
       </section>
 
       <section class="panel">
@@ -96,52 +107,97 @@
         <div class="warn-box">
           <strong>提醒</strong>
           <ul>
-            {% for w in result.warnings %}
-            <li>{{ w }}</li>
-            {% endfor %}
+            {% for w in result.warnings %}<li>{{ w }}</li>{% endfor %}
           </ul>
         </div>
         {% endif %}
 
         <form action="/commit" method="post">
           <input type="hidden" name="source_image" value="{{ result.source_image }}" />
-          <label>製令</label>
-          <input name="work_order" value="{{ result.work_order }}" />
-          <label>品號</label>
-          <input name="product_no" value="{{ result.product_no }}" />
-          <label>作業人員</label>
-          <input name="operator" value="{{ result.operator }}" />
-          <label>日期</label>
-          <input name="date" value="{{ result.date }}" />
-          <label>班別</label>
-          <input name="shift" value="{{ result.shift }}" />
+          <div class="fields">
+            <div>
+              <label>型號</label>
+              <input name="model_no" value="{{ result.model_no }}" />
+            </div>
+            <div>
+              <label>批號</label>
+              <input name="lot_no" value="{{ result.lot_no }}" />
+            </div>
+            <div>
+              <label>作業人員</label>
+              <input name="operator" value="{{ result.operator }}" />
+            </div>
+            <div>
+              <label>檢驗規範</label>
+              <input name="inspection_spec" value="{{ result.inspection_spec }}" />
+            </div>
+            <div>
+              <label>日期</label>
+              <input name="date" value="{{ result.date }}" />
+            </div>
+            <div>
+              <label>AOI</label>
+              <input name="aoi_result" value="{{ result.aoi_result }}" placeholder="OK / NG" />
+            </div>
+            <div>
+              <label>AOI 數量</label>
+              <input name="aoi_count" value="{{ result.aoi_count }}" />
+            </div>
+          </div>
+
+          <div class="totals">
+            <div>
+              <label>總數</label>
+              <input name="total_qty" type="number" value="{{ result.total_qty if result.total_qty is not none else '' }}" />
+            </div>
+            <div>
+              <label>總不良數（表上）</label>
+              <input name="total_defects_reported" type="number" value="{{ result.total_defects_reported if result.total_defects_reported is not none else '' }}" />
+            </div>
+            <div>
+              <label>總良數</label>
+              <input name="total_good" type="number" value="{{ result.total_good if result.total_good is not none else '' }}" />
+            </div>
+          </div>
+
+          <label>手寫備註</label>
+          <textarea name="hand_notes">{{ result.hand_notes }}</textarea>
 
           <table>
             <thead>
               <tr>
-                <th>不良項目</th>
-                <th>正字畫</th>
+                <th>分類</th>
+                <th>代碼</th>
+                <th>劃記/原文</th>
                 <th>數量</th>
                 <th>信心</th>
               </tr>
             </thead>
             <tbody>
               {% for d in result.defects %}
-              <tr>
-                <td>{{ d.label }}</td>
-                <td>
-                  <input name="raw_{{ d.key }}" value="{{ d.raw_mark }}" style="margin:0" />
-                </td>
-                <td>
-                  <input name="defect_{{ d.key }}" type="number" min="0" value="{{ d.count }}" style="margin:0" />
-                </td>
-                <td class="{% if d.confidence < 0.6 %}low{% endif %}">
-                  {{ '%.0f'|format(d.confidence * 100) }}%
-                </td>
-              </tr>
+                {% if d.count > 0 or d.confidence > 0 %}
+                <tr>
+                  <td>{{ d.category }}</td>
+                  <td>{{ d.key }}</td>
+                  <td><input name="raw_{{ d.key }}" value="{{ d.raw_mark }}" style="margin:0" /></td>
+                  <td><input name="defect_{{ d.key }}" type="number" min="0" value="{{ d.count }}" style="margin:0" /></td>
+                  <td class="{% if d.confidence < 0.6 %}low{% endif %}">{{ '%.0f'|format(d.confidence * 100) }}%</td>
+                </tr>
+                {% endif %}
               {% endfor %}
             </tbody>
           </table>
+          <p class="muted">只顯示有辨識到的代碼。若要補漏，可在下方新增代碼與數量後送出。</p>
+          <div class="fields">
+            <div>
+              <label>補漏代碼（例如 PB07）</label>
+              <input name="extra_key" placeholder="PB07" />
+            </div>
+            <div>
+              <label>補漏數量</label>
+              <input name="extra_count" type="number" min="0" placeholder="0" />
+            </div>
+          </div>
 
           <button type="submit">確認登打到 Excel</button>
         </form>

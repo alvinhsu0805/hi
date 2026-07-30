@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>不良表單 OCR 自動登打</title>
+  <title>QWF-ME061 OCR 自動登打</title>
   <style>
     :root {
-      --bg: #f3efe6;
-      --ink: #1c2430;
-      --accent: #0f6a5a;
-      --accent-2: #c45c26;
-      --card: #fffdf8;
-      --line: #d7d0c3;
+      --bg: #eef3f1;
+      --ink: #152028;
+      --accent: #0b5f73;
+      --accent-2: #b45309;
+      --card: #ffffff;
+      --line: #c9d5d8;
     }
     * { box-sizing: border-box; }
     body {
@@ -19,32 +19,20 @@
       font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 10% 10%, #ffe7c8 0%, transparent 40%),
-        radial-gradient(circle at 90% 0%, #cfeee6 0%, transparent 35%),
+        linear-gradient(160deg, #d9ebe7 0%, transparent 42%),
+        linear-gradient(320deg, #f7e8d4 0%, transparent 36%),
         var(--bg);
       min-height: 100vh;
     }
-    main {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 32px 20px 64px;
-    }
-    h1 {
-      font-size: clamp(1.8rem, 4vw, 2.4rem);
-      margin: 0 0 8px;
-      letter-spacing: 0.02em;
-    }
-    .sub {
-      color: #516071;
-      margin-bottom: 28px;
-      line-height: 1.6;
-    }
+    main { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: clamp(1.7rem, 4vw, 2.2rem); margin: 0 0 8px; }
+    .sub { color: #516071; margin-bottom: 24px; line-height: 1.6; }
     .panel {
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: 16px;
       padding: 22px;
-      box-shadow: 0 10px 30px rgba(28, 36, 48, 0.06);
+      box-shadow: 0 8px 24px rgba(21, 32, 40, 0.06);
     }
     .badge {
       display: inline-block;
@@ -52,21 +40,17 @@
       border-radius: 999px;
       font-size: 0.85rem;
       margin-bottom: 14px;
-      background: #e7f6f1;
+      background: #dceef2;
       color: var(--accent);
     }
-    .badge.warn { background: #fde8dc; color: var(--accent-2); }
-    label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
+    .badge.warn { background: #fde8d4; color: var(--accent-2); }
+    label { display: block; font-weight: 700; margin-bottom: 8px; }
     input[type="file"] {
       width: 100%;
       padding: 16px;
-      border: 1.5px dashed #9aa7b5;
+      border: 1.5px dashed #8aa0a8;
       border-radius: 12px;
-      background: #faf7f1;
+      background: #f7fbfb;
     }
     button, .btn {
       appearance: none;
@@ -80,15 +64,13 @@
       text-decoration: none;
       display: inline-block;
     }
-    button.secondary, .btn.secondary {
-      background: #2f3b4a;
-    }
+    .btn.secondary { background: #2f3b4a; }
     .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
     .tips {
       margin-top: 24px;
       padding: 16px 18px;
       border-left: 4px solid var(--accent);
-      background: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.7);
       line-height: 1.7;
     }
     .grid {
@@ -110,11 +92,12 @@
   <main>
     <span class="badge {% if not has_api_key %}warn{% endif %}">
       {% if has_api_key %}Vision OCR 已啟用{% else %}示範模式（未設定 OPENAI_API_KEY）{% endif %}
+      · {{ schema.form_id }}
     </span>
-    <h1>不良表單自動登打</h1>
+    <h1>{{ schema.form_name }}</h1>
     <p class="sub">
-      拍照上傳每日不良記錄表，系統辨識製令、品號、作業人員與正字畫不良數，
-      審核後寫入 Excel。潦草字跡建議用人眼快速覆核低信心欄位。
+      上傳每日紙本檢驗表照片。系統優先讀取底部「不良數」與總計，對應 PET / GLASS / 夾層代碼後寫入 Excel。
+      欄位多、字跡潦草時，請在審核頁快速核對後再登打。
     </p>
 
     <section class="panel">
@@ -123,24 +106,22 @@
         <input id="image" name="image" type="file" accept="image/*" capture="environment" required />
         <div class="actions">
           <button type="submit">開始辨識</button>
-          <a class="btn secondary" href="/files/outputs/blank_defect_form.xlsx">下載空白表單</a>
+          <a class="btn secondary" href="/files/outputs/blank_defect_form.xlsx">下載代碼輔助表</a>
           <a class="btn secondary" href="/files/outputs/defect_stats.xlsx">下載統計 Excel</a>
         </div>
       </form>
     </section>
 
     <div class="tips">
-      <strong>提高辨識率的做法</strong>
+      <strong>針對這張表的拍照建議</strong>
       <div class="grid">
-        <div class="chip">表單版面固定，欄位對齊</div>
-        <div class="chip">正字畫寫在框內，避免壓線</div>
-        <div class="chip">整張入鏡、光線均勻</div>
-        <div class="chip">製令/品號盡量正楷或蓋章</div>
+        <div class="chip">整張入鏡，底部合計列清楚</div>
+        <div class="chip">壓平紙張，減少陰影反光</div>
+        <div class="chip">優先靠「不良數」數字，不必數正字</div>
+        <div class="chip">大字備註（不平/水痕）當備註</div>
       </div>
-      <p style="margin:14px 0 0">目前設定的不良項目：
-        {% for item in schema.defect_items %}{{ item.label }}{% if not loop.last %}、{% endif %}{% endfor %}
-      </p>
-      <p style="margin:8px 0 0;color:#516071">Excel 輸出：{{ excel_path }}</p>
+      <p style="margin:14px 0 0">已載入 {{ schema.defect_items|length }} 個不良代碼（P / PB / GB / FA）。</p>
+      <p style="margin:8px 0 0;color:#516071">Excel：{{ excel_path }}（含「檢驗日結」「不良明細」）</p>
     </div>
   </main>
 </body>

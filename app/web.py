@@ -13,7 +13,6 @@ from .excel_writer import ExcelWriter
 from .form_template import create_blank_form
 from .ocr_engine import FormOCREngine
 from .schema import DefectCount, FormReadResult, load_schema
-from .zheng_count import strokes_to_zheng_display
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -30,7 +29,7 @@ writer = ExcelWriter(schema, excel_path)
 writer.ensure_workbook()
 create_blank_form(schema, blank_form_path)
 
-app = FastAPI(title="工廠不良表單 OCR 自動登打", version="0.1.0")
+app = FastAPI(title="QWF-ME061 不良表單 OCR 自動登打", version="0.2.0")
 app.mount("/files", StaticFiles(directory=DATA), name="files")
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
@@ -56,10 +55,6 @@ async def recognize(request: Request, image: UploadFile = File(...)):
         shutil.copyfileobj(image.file, f)
 
     result = engine.recognize(save_path)
-    for defect in result.defects:
-        if not defect.raw_mark and defect.count:
-            defect.raw_mark = strokes_to_zheng_display(defect.count)
-
     return templates.TemplateResponse(
         "review.html",
         {
@@ -67,6 +62,7 @@ async def recognize(request: Request, image: UploadFile = File(...)):
             "result": result,
             "schema": schema,
             "image_url": f"/files/uploads/{save_path.name}",
+            "nonzero": result.nonzero_defects(),
         },
     )
 
@@ -74,28 +70,81 @@ async def recognize(request: Request, image: UploadFile = File(...)):
 @app.post("/commit")
 async def commit(request: Request):
     form = dict(await request.form())
+    catalog = schema.defect_by_key()
     defects: list[DefectCount] = []
-    for item in schema.defect_items:
-        count_raw = str(form.get(f"defect_{item.key}", "0") or "0")
+
+    counts: dict[str, DefectCount] = {}
+    for key, item in catalog.items():
+        count_raw = str(form.get(f"defect_{key}", "") or "")
+        if count_raw == "":
+            continue
         try:
             count = int(count_raw)
         except ValueError:
             count = 0
-        defects.append(
-            DefectCount(
-                key=item.key,
+        counts[key] = DefectCount(
+            key=key,
+            label=item.label,
+            category=item.category,
+            count=max(0, count),
+            raw_mark=str(form.get(f"raw_{key}", "")),
+            confidence=1.0,
+        )
+
+    extra_key = str(form.get("extra_key", "") or "").strip().upper()
+    extra_count_raw = str(form.get("extra_count", "") or "").strip()
+    if extra_key and extra_count_raw != "":
+        try:
+            extra_count = max(0, int(extra_count_raw))
+        except ValueError:
+            extra_count = 0
+        if extra_key in catalog:
+            item = catalog[extra_key]
+            counts[extra_key] = DefectCount(
+                key=extra_key,
                 label=item.label,
-                count=max(0, count),
-                raw_mark=str(form.get(f"raw_{item.key}", "")),
+                category=item.category,
+                count=extra_count,
                 confidence=1.0,
             )
-        )
+        elif extra_count:
+            counts[extra_key] = DefectCount(
+                key=extra_key,
+                label=extra_key,
+                category="未登錄代碼",
+                count=extra_count,
+                confidence=1.0,
+                note="人工補漏",
+            )
+
+    # 未出現代碼補 0，確保日結表欄位完整
+    for key, item in catalog.items():
+        if key not in counts:
+            counts[key] = DefectCount(
+                key=key,
+                label=item.label,
+                category=item.category,
+                count=0,
+                confidence=1.0,
+            )
+
+    order = {d.key: i for i, d in enumerate(schema.defect_items)}
+    defects = sorted(counts.values(), key=lambda d: order.get(d.key, 9999))
+
     result = FormReadResult(
-        work_order=str(form.get("work_order", "")),
-        product_no=str(form.get("product_no", "")),
+        model_no=str(form.get("model_no", "")),
+        lot_no=str(form.get("lot_no", "")),
         operator=str(form.get("operator", "")),
+        inspection_spec=str(form.get("inspection_spec", "")),
         date=str(form.get("date", "")),
-        shift=str(form.get("shift", "")),
+        aoi_result=str(form.get("aoi_result", "")),
+        aoi_count=str(form.get("aoi_count", "")),
+        hand_notes=str(form.get("hand_notes", "")),
+        total_qty=_to_int(form.get("total_qty")),
+        total_defects_reported=_to_int(form.get("total_defects_reported")),
+        total_good=_to_int(form.get("total_good")),
+        product_no=str(form.get("model_no", "")),
+        work_order=str(form.get("lot_no", "")),
         defects=defects,
         source_image=str(form.get("source_image", "")),
         engine="human-reviewed",
@@ -104,6 +153,16 @@ async def commit(request: Request):
     result.recompute_total()
     row = writer.append_result(result, reviewed=True)
     return RedirectResponse(url=f"/done?row={row}", status_code=303)
+
+
+def _to_int(value: object) -> int | None:
+    text = str(value or "").strip()
+    if text == "":
+        return None
+    try:
+        return int(float(text))
+    except ValueError:
+        return None
 
 
 @app.get("/done", response_class=HTMLResponse)
@@ -123,6 +182,8 @@ async def done(request: Request, row: int = 0):
 async def health():
     return {
         "ok": True,
+        "form_id": schema.form_id,
+        "defect_codes": len(schema.defect_items),
         "vision_enabled": bool(engine.api_key),
         "model": engine.model if engine.api_key else None,
         "excel": str(excel_path),

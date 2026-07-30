@@ -1,4 +1,4 @@
-"""產生可列印的空白不良記錄表（PDF/影像前可用 Excel 或 HTML 列印）。"""
+"""產生對應 QWF-ME061 欄位的空白登打輔助表（非正式複印件）。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def create_blank_form(schema: FormSchema, output_path: str | Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
     ws = wb.active
-    ws.title = "不良記錄表"
+    ws.title = "登打輔助"
 
     thin = Border(
         left=Side(style="thin"),
@@ -23,57 +23,49 @@ def create_blank_form(schema: FormSchema, output_path: str | Path) -> Path:
         top=Side(style="thin"),
         bottom=Side(style="thin"),
     )
-    title_font = Font(size=18, bold=True)
-    label_font = Font(size=12, bold=True)
-
-    ws.merge_cells("A1:F1")
-    ws["A1"] = schema.form_name
-    ws["A1"].font = title_font
+    title = f"{schema.form_name} ({schema.form_id} {schema.form_version})".strip()
+    ws.merge_cells("A1:D1")
+    ws["A1"] = title
+    ws["A1"].font = Font(size=16, bold=True)
     ws["A1"].alignment = Alignment(horizontal="center")
 
-    headers = [(f.label, f.key) for f in schema.header_fields]
     row = 3
-    col = 1
-    for label, _ in headers:
-        cell_label = ws.cell(row=row, column=col, value=label)
-        cell_value = ws.cell(row=row, column=col + 1, value="")
-        cell_label.font = label_font
-        for c in (cell_label, cell_value):
-            c.border = thin
-            c.alignment = Alignment(horizontal="center", vertical="center")
-        col += 2
-        if col > 5:
-            col = 1
-            row += 1
+    for field in schema.header_fields:
+        ws.cell(row=row, column=1, value=field.label).font = Font(bold=True)
+        ws.cell(row=row, column=2, value="")
+        for c in range(1, 3):
+            ws.cell(row=row, column=c).border = thin
+        row += 1
 
-    row += 2
-    ws.cell(row=row, column=1, value="不良項目").font = label_font
-    ws.cell(row=row, column=2, value="正字畫（正=5）").font = label_font
-    ws.cell(row=row, column=3, value="備註").font = label_font
-    for c in range(1, 4):
+    row += 1
+    ws.cell(row=row, column=1, value="分類").font = Font(bold=True)
+    ws.cell(row=row, column=2, value="代碼").font = Font(bold=True)
+    ws.cell(row=row, column=3, value="名稱").font = Font(bold=True)
+    ws.cell(row=row, column=4, value="不良數").font = Font(bold=True)
+    for c in range(1, 5):
         ws.cell(row=row, column=c).border = thin
 
     for item in schema.defect_items:
         row += 1
-        ws.cell(row=row, column=1, value=item.label).border = thin
-        ws.cell(row=row, column=2, value="").border = thin
-        ws.cell(row=row, column=3, value="").border = thin
-        ws.row_dimensions[row].height = 28
+        ws.cell(row=row, column=1, value=item.category).border = thin
+        ws.cell(row=row, column=2, value=item.key).border = thin
+        ws.cell(row=row, column=3, value=item.label).border = thin
+        ws.cell(row=row, column=4, value="").border = thin
 
-    ws.column_dimensions["A"].width = 16
-    ws.column_dimensions["B"].width = 28
-    ws.column_dimensions["C"].width = 24
-    ws.column_dimensions["D"].width = 16
-    ws.column_dimensions["E"].width = 16
-    ws.column_dimensions["F"].width = 16
-
-    tip_row = row + 2
-    ws.merge_cells(start_row=tip_row, start_column=1, end_row=tip_row, end_column=3)
+    tip = row + 2
+    ws.merge_cells(start_row=tip, start_column=1, end_row=tip, end_column=4)
     ws.cell(
-        row=tip_row,
+        row=tip,
         column=1,
-        value="填寫提示：請用正字畫計數（正=5）。拍照時請整張入鏡、光線充足、避免反光。",
+        value=(
+            "拍照提示：整張入鏡、壓平、避免反光；底部「不良數」列與總計務必清晰。"
+            "此檔為登打輔助清單，非正式紙本複印件。"
+        ),
     )
 
+    ws.column_dimensions["A"].width = 16
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 12
     wb.save(output_path)
     return output_path

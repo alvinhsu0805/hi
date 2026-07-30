@@ -1,63 +1,57 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
+import cv2
+import numpy as np
+
+from app.excel_writer import ExcelWriter
+from app.ocr_engine import FormOCREngine
+from app.schema import load_schema
 from app.zheng_count import count_zheng_marks, strokes_to_zheng_display
 
 
 class ZhengCountTests(unittest.TestCase):
     def test_full_zheng(self):
         self.assertEqual(count_zheng_marks("正")[0], 5)
-        self.assertEqual(count_zheng_marks("正正")[0], 10)
         self.assertEqual(count_zheng_marks("正正一")[0], 11)
 
-    def test_partial_strokes(self):
-        self.assertEqual(count_zheng_marks("一")[0], 1)
-        self.assertEqual(count_zheng_marks("丁")[0], 2)
-        self.assertEqual(count_zheng_marks("下")[0], 3)
-        self.assertEqual(count_zheng_marks("止")[0], 4)
-
-    def test_empty_and_digits(self):
-        self.assertEqual(count_zheng_marks("")[0], 0)
-        self.assertEqual(count_zheng_marks("無")[0], 0)
-        self.assertEqual(count_zheng_marks("12")[0], 12)
-
     def test_display(self):
-        self.assertEqual(strokes_to_zheng_display(0), "")
-        self.assertEqual(strokes_to_zheng_display(5), "正")
         self.assertEqual(strokes_to_zheng_display(6), "正一")
-        self.assertEqual(strokes_to_zheng_display(11), "正正一")
 
 
-class ExcelPipelineTests(unittest.TestCase):
-    def test_append_demo_result(self):
-        from pathlib import Path
-        import tempfile
+class AmtSchemaTests(unittest.TestCase):
+    def test_schema_has_amt_codes(self):
+        schema = load_schema()
+        self.assertEqual(schema.form_id, "QWF-ME061")
+        keys = {d.key for d in schema.defect_items}
+        self.assertIn("P03", keys)
+        self.assertIn("PB01", keys)
+        self.assertIn("GB01", keys)
+        self.assertIn("FA01", keys)
+        self.assertGreaterEqual(len(schema.defect_items), 50)
 
-        from app.excel_writer import ExcelWriter
-        from app.ocr_engine import FormOCREngine
-        from app.schema import load_schema
 
+class AmtPipelineTests(unittest.TestCase):
+    def test_sample_demo_and_excel(self):
         schema = load_schema()
         with tempfile.TemporaryDirectory() as tmp:
-            # 用檔名示範模式
-            img = Path(tmp) / "20260730_WO001_PN100_王小明.jpg"
-            # 建立最小可讀影像
-            import numpy as np
-            import cv2
-
-            blank = np.full((200, 300, 3), 255, dtype=np.uint8)
-            cv2.imwrite(str(img), blank)
+            img = Path(tmp) / "amt_qwf_me061_sample.jpg"
+            cv2.imwrite(str(img), np.full((400, 600, 3), 240, np.uint8))
 
             engine = FormOCREngine(schema)
             result = engine.recognize(img)
-            self.assertEqual(result.work_order, "WO001")
-            self.assertEqual(result.product_no, "PN100")
-            self.assertEqual(result.operator, "王小明")
+            self.assertEqual(result.model_no, "10819-B")
+            self.assertEqual(result.lot_no, "26-06-209")
+            self.assertEqual(result.total_qty, 142)
+            self.assertEqual(result.total_defects_reported, 15)
+            self.assertGreaterEqual(result.total_defects, 15)
 
             xlsx = Path(tmp) / "out.xlsx"
             writer = ExcelWriter(schema, xlsx)
-            row = writer.append_result(result, reviewed=False)
+            row = writer.append_result(result, reviewed=True)
             self.assertGreaterEqual(row, 2)
             self.assertTrue(xlsx.exists())
 

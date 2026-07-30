@@ -1,43 +1,451 @@
 {
-  "form_name": "不良記錄表",
+  "form_name": "外觀檢驗暨首件檢查表",
+  "form_id": "QWF-ME061",
+  "form_version": "V2.04",
+  "notes": "對應 AMT 紙本表。辨識時優先讀底部「不良數」列與「總不良數/總良數/總數」；格子內正字畫或劃記僅作補強。不良代碼名稱可依工廠代碼表修改 label。",
   "header_fields": [
-    {"key": "work_order", "label": "製令", "type": "text"},
-    {"key": "product_no", "label": "品號", "type": "text"},
-    {"key": "operator", "label": "作業人員", "type": "text"},
-    {"key": "date", "label": "日期", "type": "date"},
-    {"key": "shift", "label": "班別", "type": "text"}
+    {
+      "key": "model_no",
+      "label": "型號",
+      "type": "text"
+    },
+    {
+      "key": "lot_no",
+      "label": "批號",
+      "type": "text"
+    },
+    {
+      "key": "operator",
+      "label": "作業人員",
+      "type": "text"
+    },
+    {
+      "key": "inspection_spec",
+      "label": "檢驗規範",
+      "type": "text"
+    },
+    {
+      "key": "date",
+      "label": "日期",
+      "type": "date"
+    },
+    {
+      "key": "aoi_result",
+      "label": "AOI",
+      "type": "text"
+    },
+    {
+      "key": "aoi_count",
+      "label": "AOI數量",
+      "type": "number"
+    },
+    {
+      "key": "total_qty",
+      "label": "總數",
+      "type": "number"
+    },
+    {
+      "key": "total_defects",
+      "label": "總不良數",
+      "type": "number"
+    },
+    {
+      "key": "total_good",
+      "label": "總良數",
+      "type": "number"
+    },
+    {
+      "key": "hand_notes",
+      "label": "手寫備註",
+      "type": "text"
+    }
+  ],
+  "defect_categories": [
+    {
+      "key": "pet_raw",
+      "label": "PET原材料不良",
+      "codes": [
+        "P03",
+        "P05",
+        "P06",
+        "P99"
+      ]
+    },
+    {
+      "key": "pet",
+      "label": "PET不良",
+      "codes": [
+        "PB01",
+        "PB02",
+        "PB03",
+        "PB04",
+        "PB05",
+        "PB06",
+        "PB07",
+        "PB08",
+        "PB09",
+        "PB10",
+        "PB11",
+        "PB12",
+        "PB13",
+        "PB14",
+        "PB15",
+        "PB16",
+        "PB17",
+        "PB18",
+        "PB19",
+        "PB20",
+        "PB21",
+        "PB22",
+        "PB23"
+      ]
+    },
+    {
+      "key": "glass",
+      "label": "GLASS不良",
+      "codes": [
+        "GB01",
+        "GB02",
+        "GB03",
+        "GB04",
+        "GB05",
+        "GB06",
+        "GB07",
+        "GB08",
+        "GB09",
+        "GB10",
+        "GB11",
+        "GB12",
+        "GB13",
+        "GB14",
+        "GB15",
+        "GB16"
+      ]
+    },
+    {
+      "key": "fa",
+      "label": "夾層不良",
+      "codes": [
+        "FA01",
+        "FA02",
+        "FA03",
+        "FA04",
+        "FA05",
+        "FA06",
+        "FA07",
+        "FA08",
+        "FA09",
+        "FA10",
+        "FA11",
+        "FA12",
+        "FA13",
+        "FA14",
+        "FA99"
+      ]
+    }
   ],
   "defect_items": [
-    {"key": "scratch", "label": "刮傷"},
-    {"key": "dent", "label": "凹陷"},
-    {"key": "dirty", "label": "污漬"},
-    {"key": "burr", "label": "毛邊"},
-    {"key": "crack", "label": "裂痕"},
-    {"key": "wrong_size", "label": "尺寸不良"},
-    {"key": "missing", "label": "缺料"},
-    {"key": "other", "label": "其他"}
+    {
+      "key": "P03",
+      "label": "P03",
+      "category": "PET原材料不良"
+    },
+    {
+      "key": "P05",
+      "label": "P05",
+      "category": "PET原材料不良"
+    },
+    {
+      "key": "P06",
+      "label": "P06",
+      "category": "PET原材料不良"
+    },
+    {
+      "key": "P99",
+      "label": "P99其他",
+      "category": "PET原材料不良"
+    },
+    {
+      "key": "PB01",
+      "label": "PB01",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB02",
+      "label": "PB02",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB03",
+      "label": "PB03",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB04",
+      "label": "PB04",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB05",
+      "label": "PB05",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB06",
+      "label": "PB06",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB07",
+      "label": "PB07",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB08",
+      "label": "PB08",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB09",
+      "label": "PB09",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB10",
+      "label": "PB10",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB11",
+      "label": "PB11",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB12",
+      "label": "PB12",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB13",
+      "label": "PB13",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB14",
+      "label": "PB14",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB15",
+      "label": "PB15",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB16",
+      "label": "PB16",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB17",
+      "label": "PB17",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB18",
+      "label": "PB18",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB19",
+      "label": "PB19",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB20",
+      "label": "PB20",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB21",
+      "label": "PB21",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB22",
+      "label": "PB22",
+      "category": "PET不良"
+    },
+    {
+      "key": "PB23",
+      "label": "PB23",
+      "category": "PET不良"
+    },
+    {
+      "key": "GB01",
+      "label": "GB01",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB02",
+      "label": "GB02",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB03",
+      "label": "GB03",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB04",
+      "label": "GB04",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB05",
+      "label": "GB05",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB06",
+      "label": "GB06",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB07",
+      "label": "GB07",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB08",
+      "label": "GB08",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB09",
+      "label": "GB09",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB10",
+      "label": "GB10",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB11",
+      "label": "GB11",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB12",
+      "label": "GB12",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB13",
+      "label": "GB13",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB14",
+      "label": "GB14",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB15",
+      "label": "GB15",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "GB16",
+      "label": "GB16",
+      "category": "GLASS不良"
+    },
+    {
+      "key": "FA01",
+      "label": "FA01",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA02",
+      "label": "FA02",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA03",
+      "label": "FA03",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA04",
+      "label": "FA04",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA05",
+      "label": "FA05",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA06",
+      "label": "FA06",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA07",
+      "label": "FA07",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA08",
+      "label": "FA08",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA09",
+      "label": "FA09",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA10",
+      "label": "FA10",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA11",
+      "label": "FA11",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA12",
+      "label": "FA12",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA13",
+      "label": "FA13",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA14",
+      "label": "FA14",
+      "category": "夾層不良"
+    },
+    {
+      "key": "FA99",
+      "label": "FA99其他",
+      "category": "夾層不良"
+    }
   ],
   "excel": {
-    "sheet_name": "不良統計",
-    "header_row": 1,
-    "columns": {
-      "date": "A",
-      "work_order": "B",
-      "product_no": "C",
-      "operator": "D",
-      "shift": "E",
-      "scratch": "F",
-      "dent": "G",
-      "dirty": "H",
-      "burr": "I",
-      "crack": "J",
-      "wrong_size": "K",
-      "missing": "L",
-      "other": "M",
-      "total": "N",
-      "source_image": "O",
-      "confidence": "P",
-      "reviewed": "Q"
-    }
-  }
+    "summary_sheet": "檢驗日結",
+    "detail_sheet": "不良明細",
+    "header_row": 1
+  },
+  "ocr_priority": [
+    "讀表頭：型號、批號、作業人員、檢驗規範、日期、AOI",
+    "讀底部合計列：各不良代碼對應的「不良數」阿拉伯數字",
+    "讀總數、總不良數、總良數並交叉驗證",
+    "若底部空白，再數格子內正字畫/劃記",
+    "記錄跨欄手寫註記（如不平、水痕）到 hand_notes"
+  ]
 }
