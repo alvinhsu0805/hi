@@ -44,6 +44,7 @@ class AmtPipelineTests(unittest.TestCase):
             engine = FormOCREngine(schema)
             result = engine.recognize(img)
             self.assertEqual(result.model_no, "10819-B")
+            self.assertEqual(result.operator, "12449 / 12129")
             self.assertEqual(result.lot_no, "26-06-209")
             self.assertEqual(result.total_qty, 142)
             self.assertEqual(result.total_defects_reported, 15)

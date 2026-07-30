@@ -224,7 +224,7 @@ class FormOCREngine:
         if "qwf" in stem or "amt" in stem or "sample" in stem or "me061" in stem:
             result.model_no = "10819-B"
             result.lot_no = "26-06-209"
-            result.operator = "17449 / 1229"
+            result.operator = "12449 / 12129"
             result.inspection_spec = "A001-3"
             result.date = "16"
             result.aoi_result = "OK"
