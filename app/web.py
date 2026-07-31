@@ -61,7 +61,7 @@ async def index(request: Request):
 
 @app.get("/offline", response_class=HTMLResponse)
 async def offline_home(request: Request):
-    return render(request, "offline.html", {})
+    return render(request, "offline.html", {"ocr_status": offline_engine.status()})
 
 
 @app.post("/offline/recognize", response_class=HTMLResponse)
@@ -260,7 +260,7 @@ async def health():
         "form_id": schema.form_id,
         "defect_codes": len(schema.defect_items),
         "vision_enabled": bool(engine.api_key),
-        "offline_engine": offline_engine.engine_name,
+        "offline": offline_engine.status(),
         "model": engine.model if engine.api_key else None,
         "excel": str(excel_path),
         "header_excel": str(header_excel_path),

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -25,23 +26,42 @@ class OfflineHeaderOCR:
         self.lang = lang
         self._easy = None
         self._paddle = None
-        self.engine_name = "unavailable"
+        self.engine_name = "not-started"
+        self.last_error = ""
+
+    def status(self) -> dict[str, str]:
+        """給健康檢查／頁面顯示用。"""
+        try:
+            import easyocr  # noqa: F401
+
+            easy = "installed"
+        except Exception as exc:  # noqa: BLE001
+            easy = f"missing:{exc}"
+        return {
+            "engine_name": self.engine_name,
+            "easyocr": easy,
+            "last_error": self.last_error,
+        }
 
     def recognize(self, image_path: str | Path) -> tuple[HeaderFields, list[str]]:
         image_path = Path(image_path)
-        prepared = self._prepare(image_path)
-        texts = self._run_ocr(prepared)
+        # 先對原圖；手寫藍筆有時比強化圖更好認
+        texts = self._run_ocr(image_path)
         fields = parse_header_from_texts(texts)
-        # 表頭裁切若漏字，再對原圖補跑一次合併
+
         if fields.warnings:
-            full_texts = self._run_ocr(image_path)
-            if full_texts:
-                merged = list(dict.fromkeys(texts + full_texts))
+            prepared = self._prepare(image_path)
+            prep_texts = self._run_ocr(prepared)
+            if prep_texts:
+                merged = list(dict.fromkeys(texts + prep_texts))
                 fields = parse_header_from_texts(merged)
                 texts = merged
-        if self.engine_name.startswith("unavailable"):
+
+        if self.engine_name.startswith("unavailable") or self.engine_name == "not-started":
+            detail = self.last_error or self.engine_name
             fields.warnings.append(
-                "離線 OCR 引擎不可用。請安裝 easyocr（建議）或 paddleocr，或改手動輸入。"
+                "離線 OCR 引擎不可用。請確認用 py -3.12 啟動，並已安裝 easyocr。"
+                f" 詳細：{detail}"
             )
         elif not texts:
             fields.warnings.append("OCR 未讀到文字，請換更清楚的表頭照片。")
@@ -59,43 +79,51 @@ class OfflineHeaderOCR:
 
     def _run_ocr(self, image_path: Path) -> list[str]:
         texts = self._run_easyocr(image_path)
-        if texts:
+        if texts or self.engine_name == "easyocr":
             return texts
-        # EasyOCR 已可用但沒字時，不要被 paddle 錯誤訊息蓋掉
-        if self.engine_name == "easyocr":
-            return texts
-        paddle_texts = self._run_paddle(image_path)
-        return paddle_texts
+        return self._run_paddle(image_path)
 
     def _run_easyocr(self, image_path: Path) -> list[str]:
         try:
             import easyocr
         except Exception as exc:  # noqa: BLE001
-            self.engine_name = f"unavailable:easyocr:{exc}"
+            self.engine_name = "unavailable:easyocr-import"
+            self.last_error = str(exc)
             return []
+
         if self._easy is None:
-            # 型號/批號/工號本身是英數；先用 en 較快且離線穩
-            # 若之後要靠中文標籤定位，可改 Reader(['ch_tra','en'])
-            self._easy = easyocr.Reader(["en"], gpu=False, verbose=False)
+            try:
+                # 表頭英數為主；加入 ch_tra 較慢，先 en
+                self._easy = easyocr.Reader(["en"], gpu=False, verbose=False)
+            except Exception as exc:  # noqa: BLE001
+                self.engine_name = "unavailable:easyocr-init"
+                self.last_error = f"{exc}\n{traceback.format_exc()}"
+                return []
+
         try:
             raw = self._easy.readtext(str(image_path), detail=0, paragraph=False)
         except Exception as exc:  # noqa: BLE001
-            self.engine_name = f"unavailable:easyocr-run:{exc}"
+            self.engine_name = "unavailable:easyocr-run"
+            self.last_error = f"{exc}\n{traceback.format_exc()}"
             return []
+
         self.engine_name = "easyocr"
+        self.last_error = ""
         return [re.sub(r"\s+", " ", str(t)).strip() for t in raw if str(t).strip()]
 
     def _run_paddle(self, image_path: Path) -> list[str]:
         try:
             from paddleocr import PaddleOCR
         except Exception as exc:  # noqa: BLE001
-            if self.engine_name.startswith("unavailable"):
+            if not self.last_error:
+                self.last_error = f"paddle import: {exc}"
+            if not self.engine_name.startswith("unavailable"):
                 self.engine_name = f"unavailable:paddle:{exc}"
             return []
         if self._paddle is None:
             try:
                 self._paddle = PaddleOCR(
-                    lang="en" if not self.lang.startswith("ch") else "ch",
+                    lang="en",
                     use_doc_orientation_classify=False,
                     use_doc_unwarping=False,
                     use_textline_orientation=False,
@@ -131,7 +159,6 @@ def _flatten_paddle_result(result: Any) -> list[str]:
     for page in result or []:
         if page is None:
             continue
-        # paddlex result object
         if hasattr(page, "rec_texts"):
             for item in page.rec_texts or []:
                 texts.append(str(item))

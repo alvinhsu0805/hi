@@ -69,6 +69,10 @@
       在瀏覽器操作（不需本機 Tk 視窗）。先辨識型號、批號、作業人員，確認後寫入 Excel。
       使用 EasyOCR，可離線；第一次較慢。
     </p>
+    <p class="sub">引擎狀態：easyocr={{ ocr_status.easyocr }}　目前={{ ocr_status.engine_name }}</p>
+    {% if ocr_status.easyocr != 'installed' %}
+    <p class="sub" style="color:#b45309">請用 <code>py -3.12 main.py serve</code> 啟動，並確認已安裝 easyocr。</p>
+    {% endif %}
     <section class="panel">
       <form action="/offline/recognize" method="post" enctype="multipart/form-data">
         <label for="image">上傳表頭／整張表單照片</label>
