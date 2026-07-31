@@ -101,7 +101,9 @@ class OfflineHeaderOCR:
                 return []
 
         try:
-            raw = self._easy.readtext(str(image_path), detail=0, paragraph=False)
+            # Windows 路徑／中文檔名時，cv2.imread 常失敗；改傳 numpy 圖
+            image = load_image(image_path)
+            raw = self._easy.readtext(image, detail=0, paragraph=False)
         except Exception as exc:  # noqa: BLE001
             self.engine_name = "unavailable:easyocr-run"
             self.last_error = f"{exc}\n{traceback.format_exc()}"
