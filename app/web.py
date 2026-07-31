@@ -10,8 +10,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .excel_writer import ExcelWriter
+from .field_parsers import HeaderFields, normalize_lot
 from .form_template import create_blank_form
+from .header_excel import HeaderExcelWriter
 from .ocr_engine import FormOCREngine
+from .offline_ocr import OfflineHeaderOCR
 from .schema import DefectCount, FormReadResult, load_schema
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,26 +26,100 @@ OUTPUTS.mkdir(parents=True, exist_ok=True)
 
 schema = load_schema()
 engine = FormOCREngine(schema)
+offline_engine = OfflineHeaderOCR()
 excel_path = OUTPUTS / "defect_stats.xlsx"
+header_excel_path = OUTPUTS / "header_offline.xlsx"
 blank_form_path = OUTPUTS / "blank_defect_form.xlsx"
 writer = ExcelWriter(schema, excel_path)
+header_writer = HeaderExcelWriter(header_excel_path)
 writer.ensure_workbook()
+header_writer.ensure()
 create_blank_form(schema, blank_form_path)
 
-app = FastAPI(title="QWF-ME061 不良表單 OCR 自動登打", version="0.2.0")
+app = FastAPI(title="QWF-ME061 不良表單 OCR 自動登打", version="0.3.0")
 app.mount("/files", StaticFiles(directory=DATA), name="files")
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
 
+def render(request: Request, name: str, context: dict | None = None):
+    ctx = dict(context or {})
+    return templates.TemplateResponse(request, name, ctx)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(
+    return render(
+        request,
         "index.html",
         {
-            "request": request,
             "schema": schema,
             "excel_path": str(excel_path.relative_to(ROOT)),
             "has_api_key": bool(engine.api_key),
+        },
+    )
+
+
+@app.get("/offline", response_class=HTMLResponse)
+async def offline_home(request: Request):
+    return render(request, "offline.html", {})
+
+
+@app.post("/offline/recognize", response_class=HTMLResponse)
+async def offline_recognize(request: Request, image: UploadFile = File(...)):
+    suffix = Path(image.filename or "form.jpg").suffix or ".jpg"
+    save_path = UPLOADS / f"{uuid.uuid4().hex}{suffix}"
+    with save_path.open("wb") as f:
+        shutil.copyfileobj(image.file, f)
+
+    fields, texts = offline_engine.recognize(save_path)
+    return render(
+        request,
+        "offline_review.html",
+        {
+            "fields": fields,
+            "engine": offline_engine.engine_name,
+            "ocr_texts": texts,
+            "image_url": f"/files/uploads/{save_path.name}",
+            "source_image": str(save_path),
+        },
+    )
+
+
+@app.post("/offline/commit")
+async def offline_commit(request: Request):
+    form = dict(await request.form())
+    lot_raw = str(form.get("lot_no", "")).strip()
+    lot_norm = str(form.get("lot_normalized", "")).strip()
+    if lot_raw and not lot_norm:
+        pretty, normalized = normalize_lot(lot_raw)
+        lot_raw = pretty or lot_raw
+        lot_norm = normalized
+
+    fields = HeaderFields(
+        model_no=str(form.get("model_no", "")).strip(),
+        lot_no=lot_raw,
+        lot_normalized=lot_norm,
+        operators=[
+            p.strip()
+            for p in str(form.get("operator", "")).replace(",", "/").split("/")
+            if p.strip()
+        ],
+        warnings=[],
+    )
+    row = header_writer.append(
+        fields, source_image=str(form.get("source_image", ""))
+    )
+    return RedirectResponse(url=f"/offline/done?row={row}", status_code=303)
+
+
+@app.get("/offline/done", response_class=HTMLResponse)
+async def offline_done(request: Request, row: int = 0):
+    return render(
+        request,
+        "offline_done.html",
+        {
+            "row": row,
+            "excel_url": "/files/outputs/header_offline.xlsx",
         },
     )
 
@@ -55,10 +132,10 @@ async def recognize(request: Request, image: UploadFile = File(...)):
         shutil.copyfileobj(image.file, f)
 
     result = engine.recognize(save_path)
-    return templates.TemplateResponse(
+    return render(
+        request,
         "review.html",
         {
-            "request": request,
             "result": result,
             "schema": schema,
             "image_url": f"/files/uploads/{save_path.name}",
@@ -116,7 +193,6 @@ async def commit(request: Request):
                 note="人工補漏",
             )
 
-    # 未出現代碼補 0，確保日結表欄位完整
     for key, item in catalog.items():
         if key not in counts:
             counts[key] = DefectCount(
@@ -166,10 +242,10 @@ def _to_int(value: object) -> int | None:
 
 @app.get("/done", response_class=HTMLResponse)
 async def done(request: Request, row: int = 0):
-    return templates.TemplateResponse(
+    return render(
+        request,
         "done.html",
         {
-            "request": request,
             "row": row,
             "excel_url": "/files/outputs/defect_stats.xlsx",
             "template_url": "/files/outputs/blank_defect_form.xlsx",
@@ -184,8 +260,10 @@ async def health():
         "form_id": schema.form_id,
         "defect_codes": len(schema.defect_items),
         "vision_enabled": bool(engine.api_key),
+        "offline_engine": offline_engine.engine_name,
         "model": engine.model if engine.api_key else None,
         "excel": str(excel_path),
+        "header_excel": str(header_excel_path),
     }
 
 
@@ -197,3 +275,24 @@ async def api_recognize(image: UploadFile = File(...)):
         shutil.copyfileobj(image.file, f)
     result = engine.recognize(save_path)
     return JSONResponse(result.model_dump())
+
+
+@app.post("/api/offline/recognize")
+async def api_offline_recognize(image: UploadFile = File(...)):
+    suffix = Path(image.filename or "form.jpg").suffix or ".jpg"
+    save_path = UPLOADS / f"{uuid.uuid4().hex}{suffix}"
+    with save_path.open("wb") as f:
+        shutil.copyfileobj(image.file, f)
+    fields, texts = offline_engine.recognize(save_path)
+    return JSONResponse(
+        {
+            "engine": offline_engine.engine_name,
+            "model_no": fields.model_no,
+            "lot_no": fields.lot_no,
+            "lot_normalized": fields.lot_normalized,
+            "operator": fields.operator,
+            "warnings": fields.warnings,
+            "ocr_texts": texts,
+            "source_image": str(save_path),
+        }
+    )
