@@ -61,7 +61,11 @@ class OfflineHeaderOCR:
         texts = self._run_easyocr(image_path)
         if texts:
             return texts
-        return self._run_paddle(image_path)
+        # EasyOCR 已可用但沒字時，不要被 paddle 錯誤訊息蓋掉
+        if self.engine_name == "easyocr":
+            return texts
+        paddle_texts = self._run_paddle(image_path)
+        return paddle_texts
 
     def _run_easyocr(self, image_path: Path) -> list[str]:
         try:
