@@ -51,6 +51,30 @@
 2. 不良只在底部寫數字，格子內只打點／正字當輔助  
 3. 登打前仍保留 10～20 秒人工核對工號與總不良數（這兩個最容易錯）
 
+## Vision 表頭辨識（建議）
+
+比本機 EasyOCR 準，但需要網路與 OpenAI API Key。
+
+### Windows 步驟
+
+1. 申請金鑰：https://platform.openai.com/api-keys  
+2. 重新下載最新專案 ZIP（分支 `cursor/defect-form-ocr-bfc4`）  
+3. 雙擊 `start_vision.bat`，貼上 API Key  
+4. 瀏覽器開：http://127.0.0.1:8000/vision  
+5. 上傳表單照片 → 確認型號／批號／工號 → 寫入 Excel  
+
+或在 PowerShell：
+
+```powershell
+cd "專案資料夾"
+$env:OPENAI_API_KEY="sk-你的金鑰"
+py -3.12 main.py serve
+```
+
+然後開 http://127.0.0.1:8000/vision
+
+費用大約是每張照片幾分錢台幣等級（視模型與圖大小）。預設模型 `gpt-4o-mini`。
+
 ## 離線初版（型號／批號／作業人員）
 
 先做可離線測試的表頭辨識，不依賴雲端 API。

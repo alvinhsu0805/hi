@@ -16,6 +16,7 @@ from .header_excel import HeaderExcelWriter
 from .ocr_engine import FormOCREngine
 from .offline_ocr import OfflineHeaderOCR
 from .schema import DefectCount, FormReadResult, load_schema
+from .vision_header import VisionHeaderOCR
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -27,6 +28,7 @@ OUTPUTS.mkdir(parents=True, exist_ok=True)
 schema = load_schema()
 engine = FormOCREngine(schema)
 offline_engine = OfflineHeaderOCR()
+vision_engine = VisionHeaderOCR()
 excel_path = OUTPUTS / "defect_stats.xlsx"
 header_excel_path = OUTPUTS / "header_offline.xlsx"
 blank_form_path = OUTPUTS / "blank_defect_form.xlsx"
@@ -55,6 +57,48 @@ async def index(request: Request):
             "schema": schema,
             "excel_path": str(excel_path.relative_to(ROOT)),
             "has_api_key": bool(engine.api_key),
+        },
+    )
+
+
+@app.get("/vision", response_class=HTMLResponse)
+async def vision_home(request: Request):
+    return render(request, "vision.html", {"vision": vision_engine.status()})
+
+
+@app.post("/vision/recognize", response_class=HTMLResponse)
+async def vision_recognize(request: Request, image: UploadFile = File(...)):
+    if not vision_engine.enabled:
+        return render(
+            request,
+            "vision.html",
+            {
+                "vision": vision_engine.status(),
+                "error": "未設定 OPENAI_API_KEY",
+            },
+        )
+    suffix = Path(image.filename or "form.jpg").suffix or ".jpg"
+    save_path = UPLOADS / f"{uuid.uuid4().hex}{suffix}"
+    with save_path.open("wb") as f:
+        shutil.copyfileobj(image.file, f)
+
+    try:
+        fields, texts = vision_engine.recognize(save_path)
+        engine_name = f"vision:{vision_engine.model}"
+    except Exception as exc:  # noqa: BLE001
+        fields = HeaderFields(warnings=[f"Vision 呼叫失敗：{exc}"])
+        texts = []
+        engine_name = "vision-error"
+
+    return render(
+        request,
+        "offline_review.html",
+        {
+            "fields": fields,
+            "engine": engine_name,
+            "ocr_texts": texts,
+            "image_url": f"/files/uploads/{save_path.name}",
+            "source_image": str(save_path),
         },
     )
 
@@ -260,6 +304,7 @@ async def health():
         "form_id": schema.form_id,
         "defect_codes": len(schema.defect_items),
         "vision_enabled": bool(engine.api_key),
+        "vision_header": vision_engine.status(),
         "offline": offline_engine.status(),
         "model": engine.model if engine.api_key else None,
         "excel": str(excel_path),
