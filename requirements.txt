@@ -8,3 +8,5 @@ python-multipart>=0.0.9
 jinja2>=3.1.4
 httpx>=0.27.0
 numpy>=1.26.0
+easyocr>=1.7.1
+# paddleocr 可選；部分環境 oneDNN 不相容時改用 easyocr

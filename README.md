@@ -51,7 +51,36 @@
 2. 不良只在底部寫數字，格子內只打點／正字當輔助  
 3. 登打前仍保留 10～20 秒人工核對工號與總不良數（這兩個最容易錯）
 
-## 快速開始
+## 離線初版（型號／批號／作業人員）
+
+先做可離線測試的表頭辨識，不依賴雲端 API。
+
+```bash
+pip install -r requirements.txt
+
+# 驗證解析規則（不需照片）
+python offline_tool.py demo-parse
+# → 批號 26-07-341 會正規化成 20260700341
+
+# 辨識照片
+python offline_tool.py recognize your_photo.jpg --write-excel
+
+# 簡易 GUI（選圖 → 人工微調 → 寫 Excel）
+python offline_tool.py gui
+```
+
+規則：
+
+| 欄位 | 規則 | 例子 |
+|------|------|------|
+| 型號 | `XX-XXXXX-XXX` | `91-28190-00C` |
+| 批號 | `YY-MM-序號` → `20YY` + `MM` + 序號補 5 碼 | `26-07-341` → `20260700341` |
+| 作業人員 | 固定 5 碼（多個用 `/`） | `10672` |
+
+引擎優先 **EasyOCR**（本機離線）。第一次會下載模型，之後可斷網使用。結果會進審核欄位，建議人工確認後再寫入 `data/outputs/header_offline.xlsx`。
+
+## 快速開始（網頁版／可接雲端 Vision）
+
 
 ```bash
 pip install -r requirements.txt
