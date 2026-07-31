@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QWF-ME061 OCR 自動登打</title>
+  <style>
+    :root {
+      --bg: #eef3f1;
+      --ink: #152028;
+      --accent: #0b5f73;
+      --accent-2: #b45309;
+      --card: #ffffff;
+      --line: #c9d5d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(160deg, #d9ebe7 0%, transparent 42%),
+        linear-gradient(320deg, #f7e8d4 0%, transparent 36%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    main { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: clamp(1.7rem, 4vw, 2.2rem); margin: 0 0 8px; }
+    .sub { color: #516071; margin-bottom: 24px; line-height: 1.6; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 8px 24px rgba(21, 32, 40, 0.06);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      background: #dceef2;
+      color: var(--accent);
+    }
+    .badge.warn { background: #fde8d4; color: var(--accent-2); }
+    label { display: block; font-weight: 700; margin-bottom: 8px; }
+    input[type="file"] {
+      width: 100%;
+      padding: 16px;
+      border: 1.5px dashed #8aa0a8;
+      border-radius: 12px;
+      background: #f7fbfb;
+    }
+    button, .btn {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn.secondary { background: #2f3b4a; }
+    .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .tips {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      background: rgba(255,255,255,0.7);
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .chip {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge {% if not has_api_key %}warn{% endif %}">
+      {% if has_api_key %}Vision OCR 已啟用{% else %}示範模式（未設定 OPENAI_API_KEY）{% endif %}
+      · {{ schema.form_id }}
+    </span>
+    <h1>{{ schema.form_name }}</h1>
+    <p class="sub">
+      上傳每日紙本檢驗表照片。系統優先讀取底部「不良數」與總計，對應 PET / GLASS / 夾層代碼後寫入 Excel。
+      欄位多、字跡潦草時，請在審核頁快速核對後再登打。
+    </p>
+
+    <section class="panel">
+      <form action="/recognize" method="post" enctype="multipart/form-data">
+        <label for="image">上傳表單照片</label>
+        <input id="image" name="image" type="file" accept="image/*" capture="environment" required />
+        <div class="actions">
+          <button type="submit">開始辨識</button>
+          <a class="btn secondary" href="/vision">Vision 表頭辨識</a>
+          <a class="btn secondary" href="/offline">離線表頭辨識</a>
+          <a class="btn secondary" href="/files/outputs/blank_defect_form.xlsx">下載代碼輔助表</a>
+          <a class="btn secondary" href="/files/outputs/defect_stats.xlsx">下載統計 Excel</a>
+        </div>
+      </form>
+    </section>
+
+    <div class="tips">
+      <strong>怎麼寫比較好辨識（比「寫漂亮」更重要）</strong>
+      <div class="grid">
+        <div class="chip">數字分開寫，不要連筆</div>
+        <div class="chip">1 不要加帽；7 中間加橫</div>
+        <div class="chip">4 封口；9 圓圈要閉合</div>
+        <div class="chip">寫在格內，不要壓線</div>
+        <div class="chip">底部「不良數」一定寫阿拉伯數字</div>
+        <div class="chip">型號／人員能蓋章或印出更好</div>
+        <div class="chip">整張入鏡，合計列清楚無反光</div>
+        <div class="chip">大字備註勿蓋住代碼與合計</div>
+      </div>
+      <p style="margin:14px 0 0">已載入 {{ schema.defect_items|length }} 個不良代碼（P / PB / GB / FA）。</p>
+      <p style="margin:8px 0 0;color:#516071">Excel：{{ excel_path }}（含「檢驗日結」「不良明細」）</p>
+    </div>
+  </main>
+</body>
+</html>

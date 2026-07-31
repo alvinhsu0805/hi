@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vision 表頭辨識</title>
+  <style>
+    :root {
+      --bg: #eef3f1;
+      --ink: #152028;
+      --accent: #0b5f73;
+      --warn: #b45309;
+      --card: #ffffff;
+      --line: #c9d5d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(160deg, #dcecf5 0%, transparent 45%), var(--bg);
+      min-height: 100vh;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 28px 16px 56px; }
+    h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    .sub { color: #516071; line-height: 1.6; margin-bottom: 16px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .ok { color: #0b5f73; font-weight: 700; }
+    .bad { color: var(--warn); font-weight: 700; }
+    label { display:block; font-weight:700; margin-bottom:8px; }
+    input[type=file] {
+      width: 100%;
+      padding: 14px;
+      border: 1.5px dashed #8aa0a8;
+      border-radius: 10px;
+      background: #f7fbfb;
+    }
+    button, .btn {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 14px;
+      margin-right: 8px;
+    }
+    .btn.secondary { background: #2f3b4a; }
+    code { background: #eef2f4; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Vision 表頭辨識</h1>
+    <p class="sub">
+      用雲端 Vision 讀型號／批號／作業人員（需網路與 API Key）。通常比本機 EasyOCR 準。
+    </p>
+    {% if vision.enabled == 'yes' %}
+      <p class="ok">Vision 已啟用（{{ vision.model }}）</p>
+    {% else %}
+      <p class="bad">尚未設定 OPENAI_API_KEY</p>
+      <p class="sub">
+        PowerShell 先執行：<br/>
+        <code>$env:OPENAI_API_KEY="你的金鑰"</code><br/>
+        再 <code>py -3.12 main.py serve</code>
+      </p>
+    {% endif %}
+
+    <section class="panel">
+      <form action="/vision/recognize" method="post" enctype="multipart/form-data">
+        <label for="image">上傳表單照片</label>
+        <input id="image" name="image" type="file" accept="image/*" capture="environment" required {% if vision.enabled != 'yes' %}disabled{% endif %} />
+        <button type="submit" {% if vision.enabled != 'yes' %}disabled{% endif %}>開始 Vision 辨識</button>
+        <a class="btn secondary" href="/files/outputs/header_offline.xlsx">下載 Excel</a>
+        <a class="btn secondary" href="/">回首頁</a>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

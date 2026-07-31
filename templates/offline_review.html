@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>確認離線辨識結果</title>
+  <style>
+    :root {
+      --bg: #eef3f1;
+      --ink: #152028;
+      --accent: #0b5f73;
+      --warn: #b45309;
+      --card: #ffffff;
+      --line: #c9d5d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 56px; }
+    h1 { margin: 0 0 8px; font-size: 1.55rem; }
+    .meta { color: #516071; margin-bottom: 16px; }
+    .layout { display:grid; grid-template-columns: 1.05fr 1fr; gap: 14px; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    img { width:100%; border-radius:10px; border:1px solid var(--line); }
+    label { display:block; font-size:0.82rem; color:#516071; margin: 8px 0 4px; }
+    input {
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:9px;
+      font-size:1rem;
+    }
+    .warn {
+      background:#fff6eb;
+      border:1px solid #f0c49a;
+      border-radius:10px;
+      padding:10px 12px;
+      color: var(--warn);
+      margin-bottom: 10px;
+    }
+    button {
+      width:100%;
+      margin-top:14px;
+      border:0;
+      background: var(--accent);
+      color:#fff;
+      font-weight:700;
+      padding:12px;
+      border-radius:10px;
+      cursor:pointer;
+    }
+    details { margin-top: 12px; color:#516071; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>確認後寫入 Excel</h1>
+    <p class="meta">引擎：{{ engine }}</p>
+    <div class="layout">
+      <section class="panel">
+        <img src="{{ image_url }}" alt="上傳照片" />
+      </section>
+      <section class="panel">
+        {% if fields.warnings %}
+        <div class="warn">
+          {% for w in fields.warnings %}<div>{{ w }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <form action="/offline/commit" method="post">
+          <input type="hidden" name="source_image" value="{{ source_image }}" />
+          <label>型號（XX-XXXXX-XXX）</label>
+          <input name="model_no" value="{{ fields.model_no }}" />
+          <label>批號原文</label>
+          <input name="lot_no" value="{{ fields.lot_no }}" />
+          <label>批號正規化（26-07-341 → 20260700341）</label>
+          <input name="lot_normalized" value="{{ fields.lot_normalized }}" />
+          <label>作業人員（5碼，多個用 /）</label>
+          <input name="operator" value="{{ fields.operator }}" />
+          <button type="submit">確認寫入 Excel</button>
+        </form>
+        <details>
+          <summary>OCR 原文</summary>
+          <pre style="white-space:pre-wrap;font-size:0.85rem">{% for t in ocr_texts %}{{ t }}
+{% endfor %}</pre>
+        </details>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
